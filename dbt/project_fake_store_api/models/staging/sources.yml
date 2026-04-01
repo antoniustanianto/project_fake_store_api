@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: fakestore_raw
+    database: de-crypto-project-491302
+    schema: fakestore_raw
+    tables:
+      - name: users
+      - name: products
+      - name: carts

@@ -1,0 +1,13 @@
+# dbt/profiles.yml
+project_fake_store_api:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: "de-crypto-project-491302"        # ← ganti
+      dataset: fakestore
+      keyfile: /opt/airflow/keys/de-crypto-project-491302-b5d0feee82b5.json
+      location: asia-southeast2
+      threads: 4
+      timeout_seconds: 300

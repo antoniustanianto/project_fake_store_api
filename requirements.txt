@@ -1,0 +1,17 @@
+# requirements.txt
+# Package tambahan yang di-install ke atas image airflow:2.9.1
+
+# HTTP requests ke Fake Store API
+requests==2.31.0
+
+# Google Cloud — koneksi ke BigQuery dan GCS
+apache-airflow-providers-google==10.11.0
+
+# dbt untuk BigQuery (nanti dipakai)
+dbt-bigquery==1.7.0
+
+# Data quality checks
+great-expectations==0.18.8
+
+# Utility
+pandas==2.1.4

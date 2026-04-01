@@ -1,0 +1,152 @@
+# docker-compose.yaml
+# Airflow 2.9.1 + Postgres 16 untuk local development
+# CeleryExecutor: webserver, scheduler, worker, triggerer jalan terpisah
+
+x-airflow-common:
+  # Blok ini di-reuse oleh semua service Airflow (DRY principle)
+  &airflow-common
+  #image: apache/airflow:2.9.1
+  build: .
+  environment:
+    &airflow-common-env
+    # Executor menentukan cara Airflow menjalankan task
+    # LocalExecutor = 1 proses, CeleryExecutor = multi-worker
+    # Kita pakai LocalExecutor dulu, lebih simple untuk dev
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+
+    # Connection string ke Postgres (metadata DB Airflow)
+    # Format: dialect+driver://user:password@host:port/dbname
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+
+    # Nonaktifkan contoh DAG bawaan Airflow (biar tidak berisik)
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+
+    # Fernet key untuk enkripsi credentials di DB
+    # WAJIB di-set, generate dengan: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    AIRFLOW__CORE__FERNET_KEY: ''
+
+    # Secret key untuk Flask session (Airflow webserver pakai Flask)
+    AIRFLOW__WEBSERVER__SECRET_KEY: 'fakestore-de-secret-change-in-prod'
+
+    # Timezone — sesuaikan jika perlu
+    AIRFLOW__CORE__DEFAULT_TIMEZONE: 'Asia/Jakarta'
+
+    # Logging level
+    AIRFLOW__LOGGING__LOGGING_LEVEL: 'INFO'
+
+    # Enable test connection
+    AIRFLOW__CORE__TEST_CONNECTION: 'Enabled'
+
+  volumes:
+    # Mount folder lokal ke container
+    # Perubahan di folder lokal langsung terlihat di container
+    - ./dags:/opt/airflow/dags        # DAG files
+    - ./logs:/opt/airflow/logs        # execution logs
+    - ./plugins:/opt/airflow/plugins  # custom plugins
+    # Mount requirements.txt untuk install package tambahan
+    - ./requirements.txt:/requirements.txt
+    - ./data:/opt/airflow/data
+    - ./keys:/opt/airflow/keys
+    - ./dbt:/opt/airflow/dbt
+
+  # Airflow harus tunggu Postgres ready sebelum start
+  depends_on:
+    &airflow-common-depends-on
+    postgres:
+      condition: service_healthy  # tunggu health check Postgres pass
+
+services:
+
+  # ─────────────────────────────────────────
+  # POSTGRES — Airflow Metadata Database
+  # Menyimpan: DAG runs, task states, connections, variables
+  # ─────────────────────────────────────────
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      # Named volume: data Postgres persist meski container di-restart
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      # Airflow service lain akan tunggu ini pass
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s   # cek setiap 10 detik
+      retries: 5       # coba 5x sebelum declare unhealthy
+      start_period: 5s # kasih waktu 5s sebelum mulai cek
+
+  # ─────────────────────────────────────────
+  # AIRFLOW INIT — one-time setup
+  # Job ini jalan sekali: inisialisasi DB + buat user admin
+  # Setelah selesai, container ini exit (normal)
+  # ─────────────────────────────────────────
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        # Install package tambahan dari requirements.txt
+        pip install -r /requirements.txt
+        # Init database Airflow (buat tabel-tabel metadata)
+        airflow db init
+        # Buat user admin untuk login ke Airflow UI
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com \
+          --password admin
+    environment:
+      <<: *airflow-common-env
+      # Paksa init walaupun sudah pernah di-init (idempotent)
+      _AIRFLOW_DB_UPGRADE: 'true'
+    depends_on:
+      <<: *airflow-common-depends-on
+
+  # ─────────────────────────────────────────
+  # AIRFLOW WEBSERVER — UI di port 8080
+  # ─────────────────────────────────────────
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"  # akses via http://localhost:8080
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always  # auto-restart jika crash
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully  # tunggu init selesai
+
+  # ─────────────────────────────────────────
+  # AIRFLOW SCHEDULER — "otak" Airflow
+  # Tugasnya: scan DAG files, schedule task sesuai jadwal,
+  # kirim task ke executor
+  # ─────────────────────────────────────────
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+volumes:
+  # Named volume untuk Postgres data persistence
+  postgres-db-volume:
