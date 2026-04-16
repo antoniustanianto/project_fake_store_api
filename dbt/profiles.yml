@@ -7,7 +7,7 @@ project_fake_store_api:
       method: service-account
       project: "de-crypto-project-491302"        # ← ganti
       dataset: fakestore
-      keyfile: /opt/airflow/keys/de-crypto-project-491302-b5d0feee82b5.json
+      keyfile: /opt/airflow/keys/de-crypto-project-491302-9ba398fc8e62.json
       location: asia-southeast2
       threads: 4
       timeout_seconds: 300
