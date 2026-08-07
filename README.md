@@ -2,6 +2,15 @@
 
 > Building a reliable retail analytics pipeline that transforms operational REST API data into trusted, analytics-ready datasets using modern Data Engineering practices.
 
+| Project | Details |
+|----------|---------|
+| **Business Domain** | Retail Analytics |
+| **Project Type** | End-to-End ELT Pipeline |
+| **Primary Capability** | Cloud Data Engineering |
+| **Data Source** | Fake Store REST API |
+| **Tech Stack** | Python, Airflow, BigQuery, dbt, Great Expectations, Docker |
+| **Status** | ✅ Completed |
+
 ---
 
 # Overview
