@@ -1,210 +1,240 @@
-# 🛒 Fake Store API — End-to-End Data Pipeline
+# End-to-End Retail Analytics ELT Pipeline
 
-An end-to-end ELT data pipeline that extracts data from the [Fake Store API](https://fakestoreapi.com/), loads it into Google BigQuery, and transforms it using dbt — all orchestrated with Apache Airflow running on Docker.
+> Building a reliable retail analytics pipeline that transforms operational REST API data into trusted, analytics-ready datasets using modern Data Engineering practices.
 
 ---
 
-## 🏗️ Architecture
+# Overview
 
+This project demonstrates how operational retail data exposed through REST APIs can be transformed into reliable datasets for business analytics.
+
+Using a modern ELT architecture, the pipeline automatically ingests raw data from the Fake Store API, stores it in Google BigQuery, transforms it into analytics-ready models with dbt, validates data quality, and serves downstream business reporting through Power BI.
+
+---
+
+# Business Problem
+
+Retail applications commonly expose operational data through REST APIs. While suitable for transactional systems, these API responses are not designed for analytical workloads.
+
+Before business users can analyze sales performance, customer behavior, or product trends, the data must first be collected, standardized, validated, and transformed into a consistent analytical model.
+
+Without a structured data pipeline, organizations often face challenges such as:
+
+- Nested JSON responses that are difficult to analyze directly
+- Raw operational data that is not analytics-ready
+- Manual data preparation before reporting
+- Inconsistent data structures across sources
+- Lack of automated data quality validation
+- Repetitive reporting processes
+
+---
+
+# Solution
+
+This project implements an automated ELT pipeline that transforms operational retail data into trusted datasets ready for business analytics.
+
+The pipeline automatically:
+
+- Extracts operational data from the Fake Store API
+- Loads raw data into Google BigQuery for traceability
+- Transforms raw datasets into analytics-ready models using dbt
+- Validates data quality before downstream consumption
+- Delivers clean datasets for Power BI reporting
+
+---
+
+# Architecture
+
+```text
+                 Fake Store API
+                        │
+                        ▼
+               Apache Airflow
+                        │
+                        ▼
+              Google BigQuery (Raw)
+                        │
+                        ▼
+                dbt Staging Models
+                        │
+                        ▼
+                 dbt Mart Models
+                        │
+                        ▼
+              Data Quality Validation
+                        │
+                        ▼
+                 Power BI Dashboard
 ```
-Fake Store API          Apache Airflow          Google BigQuery
-(Data Source)    →→→   (Orchestration)   →→→   (Data Warehouse)
-                                                       ↓
-                                                      dbt
-                                                (Transformation)
-```
+
+> *(Replace this section later with an architecture diagram.)*
 
 ---
 
-## 🔄 Pipeline Flow
+# Engineering Decisions
 
-```python
-# Step 1: Extract
-ez_extract_fakestore (Airflow DAG)
-    └── extract: products, users, carts → raw JSON
+## Why ELT?
 
-# Step 2: Load
-ez_load_bigquery (Airflow DAG)
-    └── load: raw JSON → BigQuery fakestore_raw
+The project follows an ELT architecture by loading raw API responses into BigQuery before applying transformations.
 
-# Step 3: Transform
-fakestore_dbt_pipeline (Airflow DAG)
-    └── transform: raw → staging → marts
-        └── dbt run + dbt test (12 data quality checks)
-```
+Keeping raw data enables transformation logic to evolve as business requirements change without re-ingesting data from the source system.
 
 ---
 
-## 🛠️ Tech Stack
+## Why BigQuery?
 
-| Tool | Version | Purpose |
-|------|---------|---------|
-| Apache Airflow | 2.9.1 | Pipeline orchestration |
-| Google BigQuery | — | Cloud data warehouse |
-| dbt (data build tool) | 1.7.0 | Data transformation & testing |
-| Docker | — | Containerization |
-| Python | 3.12 | DAG scripting |
+BigQuery provides a scalable cloud data warehouse capable of storing raw operational data while efficiently supporting analytical workloads.
 
 ---
 
-## 📋 Prerequisites
+## Why dbt?
 
-- Docker Desktop (with WSL2 backend)
-- Google Cloud account with BigQuery enabled
-- GCP Service Account with BigQuery Admin role
-- Python 3.8+
+dbt enables modular SQL transformations, separating staging and business models into reusable components that are easier to maintain and test.
 
 ---
 
-## 📁 Project Structure
+## Why Great Expectations?
 
-```
-project_fake_store_api/
+Automated validation helps ensure downstream datasets remain reliable before being consumed by reporting dashboards.
+
+---
+
+# Pipeline Stages
+
+| Stage | Purpose |
+|-------|---------|
+| Extract | Retrieve operational retail data from the Fake Store API |
+| Load | Store raw operational data in BigQuery |
+| Transform | Build analytics-ready datasets using dbt |
+| Validate | Execute automated data quality checks |
+| Serve | Deliver trusted datasets for Power BI reporting |
+
+---
+
+# Data Warehouse Architecture
+
+This project follows a three-layer warehouse architecture.
+
+| Layer | Purpose |
+|--------|---------|
+| Raw | Stores original API responses for traceability |
+| Staging | Cleans and standardizes source data |
+| Mart | Business-ready datasets optimized for analytics |
+
+---
+
+# Data Quality
+
+Automated validation is applied before downstream reporting to improve confidence in analytical datasets.
+
+Examples include:
+
+- Null value checks
+- Unique key validation
+- Accepted value validation
+- Schema consistency
+- Relationship validation
+
+> *(Add Great Expectations screenshots later.)*
+
+---
+
+# Business Output
+
+The transformed datasets support analytical reporting such as:
+
+- Revenue by product category
+- Product performance analysis
+- Customer purchasing behavior
+- Sales distribution insights
+
+> *(Insert Power BI dashboard screenshots here.)*
+
+---
+
+# Engineering Highlights
+
+- Built an automated end-to-end ELT pipeline using Apache Airflow
+- Implemented a cloud data warehouse with Raw → Staging → Mart architecture
+- Developed modular dbt transformation models following reusable design principles
+- Applied automated data quality validation before downstream reporting
+- Containerized the complete development environment with Docker Compose
+
+---
+
+# Tech Stack
+
+| Component | Technology |
+|------------|------------|
+| Programming | Python |
+| Orchestration | Apache Airflow 2.9.1 |
+| Data Warehouse | Google BigQuery |
+| Transformation | dbt Core |
+| Data Quality | Great Expectations |
+| Visualization | Power BI |
+| Containerization | Docker Compose |
+
+---
+
+# Repository Structure
+
+```text
+.
 ├── dags/
-│   ├── ez_extract_fakestore.py        # Extract data from Fake Store API
-│   ├── ez_load_bigquery.py            # Load raw JSON to BigQuery
-│   └── dag_fakestore_dbt.py           # Run dbt models & tests
 ├── dbt/
-│   ├── profiles.yml
-│   ├── project_fake_store_api.yml
-│   └── models/
-│       ├── staging/
-│       │   ├── sources.yml
-│       │   ├── schema.yml
-│       │   ├── stg_users.sql
-│       │   ├── stg_products.sql
-│       │   └── stg_carts.sql
-│       └── marts/
-│           ├── mart_cart_details.sql
-│           ├── mart_user_summary.sql
-│           ├── mart_product_summary.sql
-│           └── mart_category_summary.sql
-├── tests/
-├── plugins/
-├── logs/
-├── Dockerfile
+├── great_expectations/
 ├── docker-compose.yml
 ├── requirements.txt
-└── .gitignore
+└── README.md
 ```
 
-> 🔑 `keys/` — GCP Service Account (gitignored)
-
 ---
 
-## 📦 dbt Models
+# Local Setup
 
-### Staging Layer (`fakestore_staging`)
-
-> Clean and rename raw data from BigQuery.
-
-| Model | Type | Description |
-|-------|------|-------------|
-| stg_users | View | Cleaned users with flattened name & address |
-| stg_products | View | Cleaned products with flattened rating |
-| stg_carts | View | Cleaned carts with unnested products array |
-
-### Marts Layer (`fakestore_marts`)
-
-> Business-level aggregations for analytics.
-
-| Model | Type | Description |
-|-------|------|-------------|
-| mart_cart_details | Table | Cart line items joined with users & products |
-| mart_user_summary | Table | Total spending & purchase history per user |
-| mart_product_summary | Table | Sales performance per product |
-| mart_category_summary | Table | Sales aggregated by product category |
-
----
-
-## ✅ Data Quality Tests
-
-12 automated tests covering:
-
-- **not_null** — critical columns have no null values
-- **unique** — primary keys are unique
-- **relationships** — referential integrity between models
-
----
-
-## 🚀 How to Run
-
-### 1. Clone the repository
+## 1. Clone repository
 
 ```bash
-git clone https://github.com/antoniustanianto/project_fake_store_api.git
-cd project_fake_store_api
+git clone <repository-url>
 ```
 
-### 2. Setup GCP Service Account
+## 2. Add Google Cloud credentials
 
-- Create a Service Account in GCP with **BigQuery Admin** role
-- Download the JSON key file
-- Place it in the `keys/` folder
+Place your Service Account key in:
 
-### 3. Configure dbt Profile
-
-Edit `dbt/profiles.yml`:
-
-```yaml
-project_fake_store_api:
-  target: dev
-  outputs:
-    dev:
-      type: bigquery
-      method: service-account
-      project: YOUR_GCP_PROJECT_ID
-      dataset: fakestore_marts
-      location: asia-southeast1
-      keyfile: /opt/airflow/keys/YOUR_KEY_FILE.json
-      threads: 4
-      timeout_seconds: 300
+```text
+keys/gcp-service-account.json
 ```
 
-### 4. Setup Airflow BigQuery Connection
-
-- Open Airflow UI → **Admin → Connections**
-- Add connection `google_cloud_default` with your GCP credentials
-
-### 5. Start the pipeline
+## 3. Start services
 
 ```bash
-# Build and start containers
-docker compose up -d --build
-
-# Access Airflow UI
-open http://localhost:8080
-# Default credentials: airflow / airflow
+docker compose up -d
 ```
 
-### 6. Trigger the pipeline
-
-- In Airflow UI, trigger `ez_extract_fakestore` manually
-- It will automatically chain to `ez_load_bigquery` → `fakestore_dbt_pipeline`
-
----
-
-## 🗂️ BigQuery Dataset Structure
+## 4. Open Airflow
 
 ```
-de-crypto-project
-├── fakestore_raw            ← Raw data from API
-│   ├── users
-│   ├── products
-│   └── carts
-├── fakestore_staging        ← Cleaned & renamed (dbt views)
-│   ├── stg_users
-│   ├── stg_products
-│   └── stg_carts
-└── fakestore_marts          ← Business layer (dbt tables)
-    ├── mart_cart_details
-    ├── mart_user_summary
-    ├── mart_product_summary
-    └── mart_category_summary
+http://localhost:8080
+```
+
+Default credentials:
+
+```
+Username : admin
+Password : admin
 ```
 
 ---
 
-## 📄 License
+# Future Improvements
 
-MIT
+Potential enhancements for a production-ready implementation:
+
+- Incremental loading
+- CI/CD pipeline
+- Automated monitoring & alerting
+- Data lineage documentation
+- Partitioning & clustering optimization
+- Cost optimization for BigQuery workloads
+- Unit testing for transformation logic
