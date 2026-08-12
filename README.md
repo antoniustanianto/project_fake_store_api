@@ -1,6 +1,13 @@
 # End-to-End Retail Analytics ELT Pipeline
 
 > Building a reliable retail analytics pipeline that transforms operational REST API data into trusted, analytics-ready datasets using modern Data Engineering practices.
+---
+# Overview
+
+This project demonstrates how operational retail data exposed through REST APIs can be transformed into reliable datasets for business analytics.
+
+Using a modern ELT architecture, the pipeline automatically ingests raw data from the Fake Store API, stores it in Google BigQuery, transforms it into analytics-ready models with dbt, validates data quality, and serves downstream business reporting through Power BI.
+---
 
 | Project | Details |
 |----------|---------|
@@ -10,14 +17,6 @@
 | **Data Source** | Fake Store REST API |
 | **Tech Stack** | Python, Airflow, BigQuery, dbt, Great Expectations, Docker |
 | **Status** | ✅ Completed |
-
----
-
-# Overview
-
-This project demonstrates how operational retail data exposed through REST APIs can be transformed into reliable datasets for business analytics.
-
-Using a modern ELT architecture, the pipeline automatically ingests raw data from the Fake Store API, stores it in Google BigQuery, transforms it into analytics-ready models with dbt, validates data quality, and serves downstream business reporting through Power BI.
 
 ---
 
